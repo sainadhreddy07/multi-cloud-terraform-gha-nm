@@ -1,4 +1,3 @@
-
 name: Multi-Cloud Terraform Deployment
 
 run-name: "Multi-cloud ${{ inputs.cloud }} / ${{ inputs.operation }}"

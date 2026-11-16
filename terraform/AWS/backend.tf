@@ -3,7 +3,7 @@
 terraform {
   backend "s3" {
     bucket = "multicloudbucket001"
-    key    = "multi-cloud-terraform-lab-gha/aws/terraform.tfstate"
+    key    = "multi-cloud-terraform-gha-nm/aws/terraform.tfstate"
     region = "ap-south-1"
 
     encrypt      = true

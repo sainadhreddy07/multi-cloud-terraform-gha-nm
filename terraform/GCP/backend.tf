@@ -3,6 +3,6 @@
 terraform {
   backend "gcs" {
     bucket = "mc-infra-gcp-tfstate-001"
-    prefix = "multi-cloud-terraform-lab-gha/gcp"
+    prefix = "multi-cloud-terraform-gha-nm/gcp"
   }
 }
