@@ -7,10 +7,6 @@ tfplan
 crash.log
 crash.*.log
 
-# Variable files may contain environment-specific values or secrets
-*.tfvars
-*.tfvars.json
-
 # Local Terraform overrides
 *_override.tf
 *_override.tf.json
