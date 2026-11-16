@@ -13,6 +13,8 @@ terraform {
     storage_account_name = "multicloudstorage001"
     container_name       = "tfstate"
     key                  = "multi-cloud-terraform-gha-nm/azure.tfstate"
-    use_oidc             = false # Backend uses ARM_SAS_TOKEN; AzureRM provider uses OIDC separately.
+    
+    use_oidc             = true
+    use_azuread_auth     = true
   }
 }
