@@ -43,7 +43,7 @@ jobs:
     with: 
       operation: "${{ inputs.operation }}"
     secrets: inherit
-
+ 
   aws:
     if: ${{ inputs.cloud == 'all' || inputs.cloud == 'aws' }}
     uses: ./.github/workflows/aws-deployment.yml
