@@ -1,0 +1,46 @@
+name: Unified Multi-Cloud Terraform Deployment
+
+run-name: "${{ inputs.cloud }} / ${{ inputs.operation }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      cloud:
+        description: Cloud to operate on
+        required: true
+        type: choice
+        default: all
+        options: [all, azure, aws, gcp]
+
+      operation:
+        description: Terraform operation
+        required: true
+        type: choice
+        default: plan
+        options: [plan, apply, destroy]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  azure:
+    if: ${{ inputs.cloud == 'all' || inputs.cloud == 'azure' }}
+    uses: ./.github/workflows/azure-deployment.yml
+    with: 
+      operation: "${{ inputs.operation }}"
+    secrets: inherit
+
+  aws:
+    if: ${{ inputs.cloud == 'all' || inputs.cloud == 'aws' }}
+    uses: ./.github/workflows/aws-deployment.yml
+    with: 
+      operation: "${{ inputs.operation }}"
+    secrets: inherit
+
+  gcp:
+    if: ${{ inputs.cloud == 'all' || inputs.cloud == 'gcp' }}
+    uses: ./.github/workflows/gcp-deployment.yml
+    with:
+      operation: "${{ inputs.operation }}"
+    secrets: inherit
