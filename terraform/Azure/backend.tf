@@ -13,8 +13,8 @@ terraform {
     storage_account_name = "multicloudstorage001"
     container_name       = "tfstate"
     key                  = "multi-cloud-terraform-gha-nm/azure.tfstate"
-    
-    use_oidc             = true
-    use_azuread_auth     = true
+
+    use_oidc         = true
+    use_azuread_auth = true
   }
 }

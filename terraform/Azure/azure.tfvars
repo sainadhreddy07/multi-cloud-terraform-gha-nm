@@ -32,13 +32,13 @@ data_disk_size_gb      = 10
 data_disk_storage_type = "StandardSSD_LRS"
 data_disk_caching      = "ReadWrite"
 
-load_balancer_name            = "azure-lb-01"
-load_balancer_public_ip_name  = "azure-lb-pip-01"
-lb_frontend_name              = "azure-lb-frontend"
-lb_backend_pool_name          = "azure-lb-backend-pool"
-lb_probe_name                 = "azure-lb-probe"
-lb_rule_name                  = "azure-lb-rule"
-lb_outbound_rule_name         = "azure-lb-outbound"
+load_balancer_name           = "azure-lb-01"
+load_balancer_public_ip_name = "azure-lb-pip-01"
+lb_frontend_name             = "azure-lb-frontend"
+lb_backend_pool_name         = "azure-lb-backend-pool"
+lb_probe_name                = "azure-lb-probe"
+lb_rule_name                 = "azure-lb-rule"
+lb_outbound_rule_name        = "azure-lb-outbound"
 
 lb_frontend_port  = 80
 lb_backend_port   = 80
