@@ -12,7 +12,7 @@ nsg_name = "azure-nsg-01"
 nic_name                  = "azure-linux-nic"
 nic_ip_configuration_name = "primary"
 
-vm_name        = "azure-linux-vm-01"
+vm_name        = "azure-linux-vm"
 vm_size        = "Standard_D2as_v6"
 admin_username = "azurelabuser"
 
