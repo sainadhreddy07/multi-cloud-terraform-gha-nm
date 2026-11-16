@@ -18,6 +18,19 @@ on:
         type: choice
         default: plan
         options: [plan, apply, destroy]
+  
+  workflow_call:
+    inputs:
+      cloud:
+        description: Cloud to operate on
+        required: true
+        type: string
+
+      operation:
+        description: Terraform operation
+        required: true
+        type: string
+
 
 permissions:
   contents: read
