@@ -1,6 +1,6 @@
 module "network" {
   source                  = "./modules/network/vnet"
-  resource_group_name     = var.resource_group_name.this.name
+  resource_group_name     = azurerm_resource_group.this.name
   vnet_name               = var.vnet_name
   location                = var.location
   vnet_address_space      = var.vnet_address_space
