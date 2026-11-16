@@ -1,0 +1,119 @@
+name: AWS Terraform Deployment
+
+
+on:
+  workflow_call:
+    inputs:
+      operation:
+        description: Terraform operation
+        required: true
+        type: string
+        default: plan
+
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Terraform operation
+        required: true
+        type: choice
+        default: plan
+        options: [plan, apply, destroy]
+
+
+permissions:
+  contents: read
+  id-token: write
+
+
+concurrency:
+  group: terraform-aws-state
+  cancel-in-progress: false
+
+
+env:
+  TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+  TF_VAR_name: ${{ vars.AWS_STACK_NAME }}
+
+  TF_VAR_vpc_cidr: ${{ vars.AWS_VPC_CIDR }}
+  TF_VAR_public_subnet_cidrs: ${{ vars.AWS_PUBLIC_SUBNET_CIDRS_JSON }}
+
+  TF_VAR_instance_type: ${{ vars.AWS_INSTANCE_TYPE }}
+  TF_VAR_ami_id: ${{ vars.AWS_AMI_ID }}
+  TF_VAR_ami_ssm_parameter: ${{ vars.AWS_AMI_SSM_PARAMETER }}
+  TF_VAR_key_name: ${{ vars.AWS_KEY_NAME }}
+
+  TF_VAR_allowed_ssh_cidrs: ${{ vars.AWS_ALLOWED_SSH_CIDRS_JSON }}
+
+  TF_VAR_alb_ingress_cidrs: ${{ vars.AWS_ALB_INGRESS_CIDRS_JSON }}
+  TF_VAR_http_port: ${{ vars.AWS_HTTP_PORT }}
+  TF_VAR_ssh_port: ${{ vars.AWS_SSH_PORT }}
+
+  TF_VAR_web_page_title: ${{ vars.AWS_WEB_PAGE_TITLE }}
+
+  TF_VAR_alb_internal: ${{ vars.AWS_ALB_INTERNAL }}
+  TF_VAR_alb_listener_port: ${{ vars.AWS_ALB_LISTENER_PORT }}
+  TF_VAR_alb_backend_port: ${{ vars.AWS_ALB_BACKEND_PORT }}
+  TF_VAR_alb_health_check_path: ${{ vars.AWS_ALB_HEALTH_CHECK_PATH }}
+  TF_VAR_alb_health_check_matcher: ${{ vars.AWS_ALB_HEALTH_CHECK_MATCHER }}
+  
+  TF_VAR_tags: ${{ vars.AWS_TAGS_JSON }}
+
+
+jobs:
+  plan:
+    if: ${{ inputs.operation == 'plan' || inputs.operation == 'apply' }}
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: terraform/AWS } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: 1.17.1, terraform_wrapper: false }
+      - run: terraform fmt -recursive
+      - run: terraform init -input=false
+      - run: terraform validate
+      - run: terraform plan -input=false -out=tfplan
+      - run: terraform show -no-color tfplan
+      - uses: actions/upload-artifact@v4
+        with: { name: aws-tfplan, path: terraform/AWS/tfplan, retention-days: 1 }
+
+  apply:
+    if: ${{ inputs.operation == 'apply' }}
+    needs: plan
+    runs-on: ubuntu-latest
+    environment: aws-terraform-apply
+    defaults: { run: { working-directory: terraform/AWS } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: 1.17.1, terraform_wrapper: false }
+      - run: terraform init -input=false
+      - uses: actions/download-artifact@v4
+        with: { name: aws-tfplan, path: terraform/AWS }
+      - run: terraform apply -input=false tfplan
+      - run: terraform output
+
+  destroy:
+    if: ${{ inputs.operation == 'destroy' }}
+    runs-on: ubuntu-latest
+    environment: aws-terraform-destroy
+    defaults: { run: { working-directory: terraform/AWS } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: 1.17.1, terraform_wrapper: false }
+      - run: terraform init -input=false
+      - run: terraform plan -destroy -input=false -out=tf-destroy-plan
+      - run: terraform show -no-color tf-destroy-plan
+      - run: terraform apply -input=false -auto-approve tf-destroy-plan

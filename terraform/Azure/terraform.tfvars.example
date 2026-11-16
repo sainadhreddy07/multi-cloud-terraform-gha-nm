@@ -1,0 +1,63 @@
+location = "EastAsia"
+resource_group_name = "rg-multicloud-azure"
+vnet_name = "vnet-multicloud-azure"
+vnet_address_space = ["10.40.0.0/16"]
+subnet_name = "snet-web"
+subnet_address_prefixes = ["10.40.1.0/24"]
+nsg_name = "nsg-web"
+security_rules = [
+  {
+    name = "allow-http"
+    priority = 100
+    direction = "Inbound"
+    access = "Allow"
+    protocol = "Tcp"
+    source_port_range = "*"
+    destination_port_range = "80"
+    source_address_prefix = "Internet"
+    destination_address_prefix = "*"
+  },
+  {
+    name = "allow-azure-probes"
+    priority = 110
+    direction = "Inbound"
+    access = "Allow"
+    protocol = "Tcp"
+    source_port_range = "*"
+    destination_port_range = "80"
+    source_address_prefix = "AzureLoadBalancer"
+    destination_address_prefix = "*"
+  }
+]
+nic_name = "nic-web"
+nic_ip_configuration_name = "primary"
+vm_name = "vm-multicloud-azure"
+vm_size = "Standard_B2s"
+admin_username = "azureadmin"
+admin_ssh_public_key = "REPLACE_WITH_OPENSSH_PUBLIC_KEY"
+os_disk_caching = "ReadWrite"
+os_disk_storage_type = "StandardSSD_LRS"
+os_disk_size_gb = 30
+image_publisher = "Canonical"
+image_offer = "0001-com-ubuntu-server-jammy"
+image_sku = "22_04-lts-gen2"
+image_version = "latest"
+web_page_title = "Azure backend"
+data_disk_count = 0
+data_disk_size_gb = 10
+data_disk_storage_type = "StandardSSD_LRS"
+data_disk_caching = "ReadWrite"
+load_balancer_name = "lb-multicloud-azure"
+load_balancer_public_ip_name = "pip-multicloud-azure"
+lb_frontend_name = "public-frontend"
+lb_backend_pool_name = "web-backend-pool"
+lb_probe_name = "http-health-probe"
+lb_rule_name = "http-rule"
+lb_outbound_rule_name = "web-egress"
+lb_frontend_port = 80
+lb_backend_port = 80
+lb_probe_path = "/"
+lb_probe_interval = 15
+lb_probe_count = 2
+lb_outbound_ports = 1024
+tags = { environment = "lab", managed_by = "terraform" }

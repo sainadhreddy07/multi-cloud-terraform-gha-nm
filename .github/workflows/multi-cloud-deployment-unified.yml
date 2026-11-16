@@ -1,0 +1,547 @@
+
+name: Multi-Cloud Terraform Deployment
+
+run-name: "Multi-cloud ${{ inputs.cloud }} / ${{ inputs.operation }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      cloud:
+        description: Cloud to operate on
+        type: choice
+        required: true
+        default: all
+        options:
+          - all
+          - azure
+          - aws
+          - gcp
+
+      operation:
+        description: Terraform operation
+        type: choice
+        required: true
+        default: plan
+        options:
+          - plan
+          - apply
+          - destroy
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+
+  # ============================================================
+  # PHASE 1 - TERRAFORM PLAN
+  # ============================================================
+
+  plan:
+    name: "Plan - ${{ matrix.cloud }}"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        cloud: ${{ fromJSON(inputs.cloud == 'all' && '["azure","aws","gcp"]' || format('["{0}"]', inputs.cloud)) }}
+
+    concurrency:
+      group: terraform-${{ matrix.cloud }}-state
+      cancel-in-progress: false
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.cloud == 'azure' && 'terraform/Azure' || matrix.cloud == 'aws' && 'terraform/AWS' || 'terraform/GCP' }}
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ----------------------------------------------------------
+      # AZURE CONFIGURATION
+      # ----------------------------------------------------------
+
+      - name: Configure Azure Terraform variables
+        if: matrix.cloud == 'azure'
+        shell: bash
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_USE_OIDC: "true"
+          ARM_SAS_TOKEN: ${{ secrets.AZURE_TFSTATE_SAS_TOKEN }}
+
+          AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+          AZURE_RESOURCE_GROUP_NAME: ${{ vars.AZURE_RESOURCE_GROUP_NAME }}
+          AZURE_VM_NAME: ${{ vars.AZURE_VM_NAME }}
+          AZURE_VM_SIZE: ${{ vars.AZURE_VM_SIZE }}
+          AZURE_ADMIN_USERNAME: ${{ vars.AZURE_ADMIN_USERNAME }}
+          AZURE_SSH_PUBLIC_KEY: ${{ secrets.AZURE_SSH_PUBLIC_KEY }}
+          AZURE_VNET_NAME: ${{ vars.AZURE_VNET_NAME }}
+          AZURE_VNET_CIDR: ${{ vars.AZURE_VNET_CIDR }}
+          AZURE_SUBNET_NAME: ${{ vars.AZURE_SUBNET_NAME }}
+          AZURE_SUBNET_CIDR: ${{ vars.AZURE_SUBNET_CIDR }}
+          AZURE_NSG_NAME: ${{ vars.AZURE_NSG_NAME }}
+          AZURE_NIC_NAME: ${{ vars.AZURE_NIC_NAME }}
+          AZURE_LB_NAME: ${{ vars.AZURE_LB_NAME }}
+          AZURE_LB_PUBLIC_IP_NAME: ${{ vars.AZURE_LB_PUBLIC_IP_NAME }}
+
+        run: |
+          set -euo pipefail
+
+          required=(
+            ARM_CLIENT_ID
+            ARM_TENANT_ID
+            ARM_SUBSCRIPTION_ID
+            ARM_SAS_TOKEN
+            AZURE_LOCATION
+            AZURE_RESOURCE_GROUP_NAME
+            AZURE_VM_NAME
+            AZURE_VM_SIZE
+            AZURE_ADMIN_USERNAME
+            AZURE_SSH_PUBLIC_KEY
+            AZURE_VNET_NAME
+            AZURE_VNET_CIDR
+            AZURE_SUBNET_NAME
+            AZURE_SUBNET_CIDR
+            AZURE_NSG_NAME
+            AZURE_NIC_NAME
+            AZURE_LB_NAME
+            AZURE_LB_PUBLIC_IP_NAME
+          )
+
+          for name in "${required[@]}"; do
+            [[ -n "${!name:-}" ]] || {
+              echo "::error::$name is missing"
+              exit 1
+            }
+          done
+
+          {
+            echo "TF_VAR_location=$AZURE_LOCATION"
+            echo "TF_VAR_resource_group_name=$AZURE_RESOURCE_GROUP_NAME"
+            echo "TF_VAR_vm_name=$AZURE_VM_NAME"
+            echo "TF_VAR_vm_size=$AZURE_VM_SIZE"
+            echo "TF_VAR_admin_username=$AZURE_ADMIN_USERNAME"
+            echo "TF_VAR_admin_ssh_public_key=$AZURE_SSH_PUBLIC_KEY"
+            echo "TF_VAR_vnet_name=$AZURE_VNET_NAME"
+            echo "TF_VAR_vnet_cidr=$AZURE_VNET_CIDR"
+            echo "TF_VAR_subnet_name=$AZURE_SUBNET_NAME"
+            echo "TF_VAR_subnet_cidr=$AZURE_SUBNET_CIDR"
+            echo "TF_VAR_nsg_name=$AZURE_NSG_NAME"
+            echo "TF_VAR_nic_name=$AZURE_NIC_NAME"
+            echo "TF_VAR_load_balancer_name=$AZURE_LB_NAME"
+            echo "TF_VAR_load_balancer_public_ip_name=$AZURE_LB_PUBLIC_IP_NAME"
+          } >> "$GITHUB_ENV"
+
+      - name: Azure login using OIDC
+        if: matrix.cloud == 'azure'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Verify Azure identity
+        if: matrix.cloud == 'azure'
+        run: az account show
+
+      # ----------------------------------------------------------
+      # AWS CONFIGURATION
+      # ----------------------------------------------------------
+
+      - name: Configure AWS Terraform variables
+        if: matrix.cloud == 'aws'
+        shell: bash
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+          TF_VAR_name: ${{ vars.AWS_PROJECT_NAME }}
+          TF_VAR_vpc_cidr: ${{ vars.AWS_VPC_CIDR }}
+          TF_VAR_public_subnet_cidrs: '["${{ vars.AWS_PUBLIC_SUBNET_1_CIDR }}","${{ vars.AWS_PUBLIC_SUBNET_2_CIDR }}"]'
+          TF_VAR_instance_type: ${{ vars.AWS_INSTANCE_TYPE }}
+          TF_VAR_key_name: ${{ vars.AWS_KEY_NAME }}
+          TF_VAR_allowed_ssh_cidr: ${{ vars.AWS_ALLOWED_SSH_CIDR }}
+
+        run: |
+          set -euo pipefail
+
+          required=(
+            AWS_REGION
+            TF_VAR_aws_region
+            TF_VAR_name
+            TF_VAR_vpc_cidr
+            TF_VAR_public_subnet_cidrs
+            TF_VAR_instance_type
+          )
+
+          for name in "${required[@]}"; do
+            [[ -n "${!name:-}" ]] || {
+              echo "::error::$name is missing"
+              exit 1
+            }
+          done
+
+      - name: AWS authentication using OIDC
+        if: matrix.cloud == 'aws'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-session-name: gha-multicloud-terraform
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Verify AWS identity
+        if: matrix.cloud == 'aws'
+        run: aws sts get-caller-identity
+
+      # ----------------------------------------------------------
+      # GCP CONFIGURATION
+      # ----------------------------------------------------------
+
+      - name: Configure GCP Terraform variables
+        if: matrix.cloud == 'gcp'
+        shell: bash
+        env:
+          TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
+          TF_VAR_region: ${{ vars.GCP_REGION }}
+          TF_VAR_zone: ${{ vars.GCP_ZONE }}
+          TF_VAR_name: ${{ vars.GCP_VM_NAME }}
+          TF_VAR_network_cidr: ${{ vars.GCP_NETWORK_CIDR }}
+          TF_VAR_subnet_cidr: ${{ vars.GCP_SUBNET_CIDR }}
+          TF_VAR_machine_type: ${{ vars.GCP_MACHINE_TYPE }}
+
+          GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GCP_TERRAFORM_SERVICE_ACCOUNT: ${{ vars.GCP_TERRAFORM_SERVICE_ACCOUNT }}
+
+        run: |
+          set -euo pipefail
+
+          required=(
+            TF_VAR_project_id
+            TF_VAR_region
+            TF_VAR_zone
+            TF_VAR_name
+            TF_VAR_network_cidr
+            TF_VAR_subnet_cidr
+            TF_VAR_machine_type
+            GCP_WORKLOAD_IDENTITY_PROVIDER
+            GCP_TERRAFORM_SERVICE_ACCOUNT
+          )
+
+          for name in "${required[@]}"; do
+            [[ -n "${!name:-}" ]] || {
+              echo "::error::$name is missing"
+              exit 1
+            }
+          done
+
+      - name: GCP authentication using Workload Identity Federation
+        if: matrix.cloud == 'gcp'
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_TERRAFORM_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Setup GCloud
+        if: matrix.cloud == 'gcp'
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Verify GCP identity
+        if: matrix.cloud == 'gcp'
+        run: |
+          gcloud config get-value project
+          gcloud auth list --filter=status:ACTIVE --format="value(account)"
+
+      # ----------------------------------------------------------
+      # TERRAFORM INITIALIZATION AND PLAN
+      # ----------------------------------------------------------
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.17.1
+          terraform_wrapper: false
+
+      - name: Terraform format check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform initialization
+        run: terraform init -input=false -reconfigure
+
+      - name: Terraform validation
+        run: terraform validate
+
+      - name: Terraform plan
+        shell: bash
+        env:
+          OPERATION: ${{ inputs.operation }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$OPERATION" == "destroy" ]]; then
+            terraform plan \
+              -destroy \
+              -input=false \
+              -lock-timeout=5m \
+              -out=tfplan
+          else
+            terraform plan \
+              -input=false \
+              -lock-timeout=5m \
+              -out=tfplan
+          fi
+
+      - name: Display Terraform plan
+        run: terraform show -no-color tfplan
+
+      - name: Upload Terraform plan artifact
+        if: inputs.operation != 'plan'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ matrix.cloud }}-${{ inputs.operation }}
+          path: ${{ matrix.cloud == 'azure' && 'terraform/Azure/tfplan' || matrix.cloud == 'aws' && 'terraform/AWS/tfplan' || 'terraform/GCP/tfplan' }}
+          if-no-files-found: error
+          retention-days: 1
+
+  # ============================================================
+  # PHASE 2 - TERRAFORM APPLY / DESTROY
+  # ============================================================
+
+  execute:
+    if: inputs.operation != 'plan'
+    name: "${{ inputs.operation }} - ${{ matrix.cloud }}"
+    needs: plan
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        cloud: ${{ fromJSON(inputs.cloud == 'all' && '["azure","aws","gcp"]' || format('["{0}"]', inputs.cloud)) }}
+
+    environment:
+      name: ${{ matrix.cloud == 'azure' && (inputs.operation == 'destroy' && 'azure-terraform-destroy' || 'azure-terraform-apply') || matrix.cloud == 'aws' && (inputs.operation == 'destroy' && 'aws-terraform-destroy' || 'aws-terraform-apply') || (inputs.operation == 'destroy' && 'gcp-terraform-destroy' || 'gcp-terraform-apply') }}
+
+    concurrency:
+      group: terraform-${{ matrix.cloud }}-state
+      cancel-in-progress: false
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.cloud == 'azure' && 'terraform/Azure' || matrix.cloud == 'aws' && 'terraform/AWS' || 'terraform/GCP' }}
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ----------------------------------------------------------
+      # AZURE EXECUTION CONFIGURATION
+      # ----------------------------------------------------------
+
+      - name: Configure Azure Terraform variables
+        if: matrix.cloud == 'azure'
+        shell: bash
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_USE_OIDC: "true"
+          ARM_SAS_TOKEN: ${{ secrets.AZURE_TFSTATE_SAS_TOKEN }}
+
+          AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+          AZURE_RESOURCE_GROUP_NAME: ${{ vars.AZURE_RESOURCE_GROUP_NAME }}
+          AZURE_VM_NAME: ${{ vars.AZURE_VM_NAME }}
+          AZURE_VM_SIZE: ${{ vars.AZURE_VM_SIZE }}
+          AZURE_ADMIN_USERNAME: ${{ vars.AZURE_ADMIN_USERNAME }}
+          AZURE_SSH_PUBLIC_KEY: ${{ secrets.AZURE_SSH_PUBLIC_KEY }}
+          AZURE_VNET_NAME: ${{ vars.AZURE_VNET_NAME }}
+          AZURE_VNET_CIDR: ${{ vars.AZURE_VNET_CIDR }}
+          AZURE_SUBNET_NAME: ${{ vars.AZURE_SUBNET_NAME }}
+          AZURE_SUBNET_CIDR: ${{ vars.AZURE_SUBNET_CIDR }}
+          AZURE_NSG_NAME: ${{ vars.AZURE_NSG_NAME }}
+          AZURE_NIC_NAME: ${{ vars.AZURE_NIC_NAME }}
+          AZURE_LB_NAME: ${{ vars.AZURE_LB_NAME }}
+          AZURE_LB_PUBLIC_IP_NAME: ${{ vars.AZURE_LB_PUBLIC_IP_NAME }}
+
+        run: |
+          set -euo pipefail
+
+          required=(
+            ARM_CLIENT_ID ARM_TENANT_ID ARM_SUBSCRIPTION_ID ARM_SAS_TOKEN
+            AZURE_LOCATION AZURE_RESOURCE_GROUP_NAME AZURE_VM_NAME
+            AZURE_VM_SIZE AZURE_ADMIN_USERNAME AZURE_SSH_PUBLIC_KEY
+            AZURE_VNET_NAME AZURE_VNET_CIDR AZURE_SUBNET_NAME
+            AZURE_SUBNET_CIDR AZURE_NSG_NAME AZURE_NIC_NAME
+            AZURE_LB_NAME AZURE_LB_PUBLIC_IP_NAME
+          )
+
+          for name in "${required[@]}"; do
+            [[ -n "${!name:-}" ]] || {
+              echo "::error::$name is missing"
+              exit 1
+            }
+          done
+
+          {
+            echo "TF_VAR_location=$AZURE_LOCATION"
+            echo "TF_VAR_resource_group_name=$AZURE_RESOURCE_GROUP_NAME"
+            echo "TF_VAR_vm_name=$AZURE_VM_NAME"
+            echo "TF_VAR_vm_size=$AZURE_VM_SIZE"
+            echo "TF_VAR_admin_username=$AZURE_ADMIN_USERNAME"
+            echo "TF_VAR_admin_ssh_public_key=$AZURE_SSH_PUBLIC_KEY"
+            echo "TF_VAR_vnet_name=$AZURE_VNET_NAME"
+            echo "TF_VAR_vnet_cidr=$AZURE_VNET_CIDR"
+            echo "TF_VAR_subnet_name=$AZURE_SUBNET_NAME"
+            echo "TF_VAR_subnet_cidr=$AZURE_SUBNET_CIDR"
+            echo "TF_VAR_nsg_name=$AZURE_NSG_NAME"
+            echo "TF_VAR_nic_name=$AZURE_NIC_NAME"
+            echo "TF_VAR_load_balancer_name=$AZURE_LB_NAME"
+            echo "TF_VAR_load_balancer_public_ip_name=$AZURE_LB_PUBLIC_IP_NAME"
+          } >> "$GITHUB_ENV"
+
+      - name: Azure login using OIDC
+        if: matrix.cloud == 'azure'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # ----------------------------------------------------------
+      # AWS EXECUTION CONFIGURATION
+      # ----------------------------------------------------------
+
+      - name: Configure AWS Terraform variables
+        if: matrix.cloud == 'aws'
+        shell: bash
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+          TF_VAR_name: ${{ vars.AWS_PROJECT_NAME }}
+          TF_VAR_vpc_cidr: ${{ vars.AWS_VPC_CIDR }}
+          TF_VAR_public_subnet_cidrs: '["${{ vars.AWS_PUBLIC_SUBNET_1_CIDR }}","${{ vars.AWS_PUBLIC_SUBNET_2_CIDR }}"]'
+          TF_VAR_instance_type: ${{ vars.AWS_INSTANCE_TYPE }}
+          TF_VAR_key_name: ${{ vars.AWS_KEY_NAME }}
+          TF_VAR_allowed_ssh_cidr: ${{ vars.AWS_ALLOWED_SSH_CIDR }}
+
+        run: |
+          set -euo pipefail
+
+          for name in AWS_REGION TF_VAR_aws_region TF_VAR_name TF_VAR_vpc_cidr TF_VAR_public_subnet_cidrs TF_VAR_instance_type; do
+            [[ -n "${!name:-}" ]] || {
+              echo "::error::$name is missing"
+              exit 1
+            }
+          done
+
+      - name: AWS authentication using OIDC
+        if: matrix.cloud == 'aws'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-session-name: gha-multicloud-terraform
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # ----------------------------------------------------------
+      # GCP EXECUTION CONFIGURATION
+      # ----------------------------------------------------------
+
+      - name: Configure GCP Terraform variables
+        if: matrix.cloud == 'gcp'
+        shell: bash
+        env:
+          TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
+          TF_VAR_region: ${{ vars.GCP_REGION }}
+          TF_VAR_zone: ${{ vars.GCP_ZONE }}
+          TF_VAR_name: ${{ vars.GCP_VM_NAME }}
+          TF_VAR_network_cidr: ${{ vars.GCP_NETWORK_CIDR }}
+          TF_VAR_subnet_cidr: ${{ vars.GCP_SUBNET_CIDR }}
+          TF_VAR_machine_type: ${{ vars.GCP_MACHINE_TYPE }}
+
+          GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GCP_TERRAFORM_SERVICE_ACCOUNT: ${{ vars.GCP_TERRAFORM_SERVICE_ACCOUNT }}
+
+        run: |
+          set -euo pipefail
+
+          required=(
+            TF_VAR_project_id TF_VAR_region TF_VAR_zone TF_VAR_name
+            TF_VAR_network_cidr TF_VAR_subnet_cidr TF_VAR_machine_type
+            GCP_WORKLOAD_IDENTITY_PROVIDER GCP_TERRAFORM_SERVICE_ACCOUNT
+          )
+
+          for name in "${required[@]}"; do
+            [[ -n "${!name:-}" ]] || {
+              echo "::error::$name is missing"
+              exit 1
+            }
+          done
+
+      - name: GCP authentication using Workload Identity Federation
+        if: matrix.cloud == 'gcp'
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_TERRAFORM_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Setup GCloud
+        if: matrix.cloud == 'gcp'
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      # ----------------------------------------------------------
+      # TERRAFORM EXECUTION
+      # ----------------------------------------------------------
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.17.1
+          terraform_wrapper: false
+
+      - name: Terraform initialization
+        run: terraform init -input=false -reconfigure
+
+      - name: Download reviewed Terraform plan
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-${{ matrix.cloud }}-${{ inputs.operation }}
+          path: ${{ matrix.cloud == 'azure' && 'terraform/Azure' || matrix.cloud == 'aws' && 'terraform/AWS' || 'terraform/GCP' }}
+
+      - name: Apply reviewed Terraform plan
+        run: terraform apply -input=false -lock-timeout=5m tfplan
+
+      - name: Display Terraform outputs
+        if: inputs.operation == 'apply'
+        run: terraform output
+
+      - name: Display Azure Load Balancer URL
+        if: matrix.cloud == 'azure' && inputs.operation == 'apply'
+        run: terraform output -raw load_balancer_url
+
+      - name: Verify Terraform state after destroy
+        if: inputs.operation == 'destroy'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          remaining="$(terraform state list)"
+
+          if [[ -n "$remaining" ]]; then
+            echo "::error::Terraform state still contains resources after destroy:"
+            echo "$remaining"
+            exit 1
+          fi
+
+          echo "Terraform state is empty."
