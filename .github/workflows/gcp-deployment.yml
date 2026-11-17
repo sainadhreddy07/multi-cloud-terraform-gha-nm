@@ -1,7 +1,20 @@
 name: GCP Terraform Deployment
 
-
 on:
+  # Manual execution
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Terraform operation
+        required: true
+        type: choice
+        default: plan
+        options:
+          - plan
+          - apply
+          - destroy
+
+  # Reusable workflow execution
   workflow_call:
     inputs:
       operation:
@@ -10,107 +23,178 @@ on:
         type: string
         default: plan
 
-  workflow_dispatch:
-    inputs:
-      operation:
-        description: Terraform operation
-        required: true
-        type: choice
-        default: plan
-        options: [plan, apply, destroy]
 
-
+# GitHub Actions permissions
 permissions:
   contents: read
   id-token: write
 
 
+# Prevent concurrent operations against GCP state
 concurrency:
   group: terraform-gcp-state
   cancel-in-progress: false
 
 
+# Common environment settings
 env:
-  TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
-  TF_VAR_region: ${{ vars.GCP_REGION }}
-  TF_VAR_zone: ${{ vars.GCP_ZONE }}
-  
-  TF_VAR_name: ${{ vars.GCP_STACK_NAME }}
-  TF_VAR_subnet_cidr: ${{ vars.GCP_SUBNET_CIDR }}
-  TF_VAR_machine_type: ${{ vars.GCP_MACHINE_TYPE }}
-  TF_VAR_network_tags: ${{ vars.GCP_NETWORK_TAGS_JSON }}
-  TF_VAR_boot_disk_image: ${{ vars.GCP_BOOT_DISK_IMAGE }}
-  TF_VAR_boot_disk_size_gb: ${{ vars.GCP_BOOT_DISK_SIZE_GB }}
-  TF_VAR_boot_disk_type: ${{ vars.GCP_BOOT_DISK_TYPE }}
-  TF_VAR_assign_public_ip: ${{ vars.GCP_ASSIGN_PUBLIC_IP }}
-  TF_VAR_web_page_title: ${{ vars.GCP_WEB_PAGE_TITLE }}
-  TF_VAR_http_source_ranges: ${{ vars.GCP_HTTP_SOURCE_RANGES_JSON }}
-  TF_VAR_health_check_source_ranges: ${{ vars.GCP_HEALTH_CHECK_SOURCE_RANGES_JSON }}
-  TF_VAR_ssh_source_ranges: ${{ vars.GCP_SSH_SOURCE_RANGES_JSON }}
-  TF_VAR_http_port: ${{ vars.GCP_HTTP_PORT }}
-  TF_VAR_ssh_port: ${{ vars.GCP_SSH_PORT }}
-
-  TF_VAR_lb_backend_port_name: ${{ vars.GCP_LB_BACKEND_PORT_NAME }}
-  TF_VAR_lb_backend_port: ${{ vars.GCP_LB_BACKEND_PORT }}
-  TF_VAR_lb_frontend_port: ${{ vars.GCP_LB_FRONTEND_PORT }}
-  TF_VAR_lb_health_check_path: ${{ vars.GCP_LB_HEALTH_CHECK_PATH }}
+  TF_IN_AUTOMATION: "true"
 
 
 jobs:
+# ============================================================
+# STAGE 1 - TERRAFORM PLAN
+# ============================================================
   plan:
+    name: GCP - Terraform Plan
     if: ${{ inputs.operation == 'plan' || inputs.operation == 'apply' }}
     runs-on: ubuntu-latest
-    defaults: { run: { working-directory: terraform/GCP } }
+
+    defaults:
+      run:
+        working-directory: terraform/GCP
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP using Workload Identity Federation
+        uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_TERRAFORM_SERVICE_ACCOUNT }}
-      - uses: hashicorp/setup-terraform@v3
-        with: { terraform_version: 1.17.1, terraform_wrapper: false }
-      - run: terraform fmt -recursive
-      - run: terraform init -input=false
-      - run: terraform validate
-      - run: terraform plan -input=false -out=tfplan
-      - run: terraform show -no-color tfplan
-      - uses: actions/upload-artifact@v4
-        with: { name: gcp-tfplan, path: terraform/GCP/tfplan, retention-days: 1 }
 
+      - name: Verify GCP Identity
+        run: gcloud auth list --filter=status:ACTIVE --format="value(account)"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.17.1
+          terraform_wrapper: false
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        run: terraform init -input=false -reconfigure
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: |
+          terraform plan \
+            -var-file=gcp.tfvars \
+            -input=false \
+            -lock-timeout=5m \
+            -out=tfplan
+
+      - name: Display Terraform Plan
+        run: terraform show -no-color tfplan
+
+      - name: Upload Terraform Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcp-tfplan
+          path: terraform/GCP/tfplan
+          retention-days: 1
+
+# ============================================================
+# STAGE 2 - TERRAFORM APPLY
+# ============================================================
   apply:
+    name: GCP - Terraform Apply
     if: ${{ inputs.operation == 'apply' }}
     needs: plan
     runs-on: ubuntu-latest
     environment: gcp-terraform-apply
-    defaults: { run: { working-directory: terraform/GCP } }
+
+    defaults:
+      run:
+        working-directory: terraform/GCP
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP using Workload Identity Federation
+        uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_TERRAFORM_SERVICE_ACCOUNT }}
-      - uses: hashicorp/setup-terraform@v3
-        with: { terraform_version: 1.17.1, terraform_wrapper: false }
-      - run: terraform init -input=false
-      - uses: actions/download-artifact@v4
-        with: { name: gcp-tfplan, path: terraform/GCP }
-      - run: terraform apply -input=false tfplan
-      - run: terraform output
 
+      - name: Verify GCP Identity
+        run: gcloud auth list --filter=status:ACTIVE --format="value(account)"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.17.1
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: terraform init -input=false -reconfigure
+
+      - name: Download Terraform Plan Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gcp-tfplan
+          path: terraform/GCP
+
+      - name: Terraform Apply
+        run: terraform apply -input=false -lock-timeout=5m tfplan
+
+      - name: Display Terraform Outputs
+        run: terraform output
+
+# ============================================================
+# STAGE 3 - TERRAFORM DESTROY
+# ============================================================
   destroy:
+    name: GCP - Terraform Destroy
     if: ${{ inputs.operation == 'destroy' }}
     runs-on: ubuntu-latest
     environment: gcp-terraform-destroy
-    defaults: { run: { working-directory: terraform/GCP } }
+
+    defaults:
+      run:
+        working-directory: terraform/GCP
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP using Workload Identity Federation
+        uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_TERRAFORM_SERVICE_ACCOUNT }}
-      - uses: hashicorp/setup-terraform@v3
-        with: { terraform_version: 1.17.1, terraform_wrapper: false }
-      - run: terraform init -input=false
-      - run: terraform plan -destroy -input=false -out=tf-destroy-plan
-      - run: terraform show -no-color tf-destroy-plan
-      - run: terraform apply -input=false -auto-approve tf-destroy-plan
+
+      - name: Verify GCP Identity
+        run: gcloud auth list --filter=status:ACTIVE --format="value(account)"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.17.1
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: terraform init -input=false -reconfigure
+
+      - name: Terraform Destroy Plan
+        run: |
+          terraform plan \
+            -destroy \
+            -var-file=gcp.tfvars \
+            -input=false \
+            -lock-timeout=5m \
+            -out=tf-destroy-plan
+
+      - name: Display Destroy Plan
+        run: terraform show -no-color tf-destroy-plan
+
+      - name: Terraform Destroy Apply
+        run: terraform apply -input=false -lock-timeout=5m tf-destroy-plan
+        
