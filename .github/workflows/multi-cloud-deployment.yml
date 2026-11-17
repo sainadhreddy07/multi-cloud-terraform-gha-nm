@@ -3,26 +3,35 @@ name: Unified Multi-Cloud Terraform Deployment
 run-name: "${{ inputs.cloud }} / ${{ inputs.operation }}"
 
 on:
+  # Manual execution
   workflow_dispatch:
     inputs:
       cloud:
-        description: Cloud to operate on
+        description: Select cloud provider
         required: true
         type: choice
         default: all
-        options: [all, azure, aws, gcp]
+        options:
+          - all
+          - azure
+          - aws
+          - gcp
 
       operation:
         description: Terraform operation
         required: true
         type: choice
         default: plan
-        options: [plan, apply, destroy]
-  
+        options:
+          - plan
+          - apply
+          - destroy
+
+  # Reusable workflow execution
   workflow_call:
     inputs:
       cloud:
-        description: Cloud to operate on
+        description: Select cloud provider
         required: true
         type: string
 
@@ -32,28 +41,48 @@ on:
         type: string
 
 
+# Permissions inherited by called workflows
 permissions:
   contents: read
   id-token: write
 
+
 jobs:
+# ============================================================
+# AZURE
+# ============================================================
   azure:
+    name: Azure - ${{ inputs.operation }}
     if: ${{ inputs.cloud == 'all' || inputs.cloud == 'azure' }}
     uses: ./.github/workflows/azure-deployment.yml
-    with: 
-      operation: "${{ inputs.operation }}"
-    secrets: inherit
- 
-  aws:
-    if: ${{ inputs.cloud == 'all' || inputs.cloud == 'aws' }}
-    uses: ./.github/workflows/aws-deployment.yml
-    with: 
-      operation: "${{ inputs.operation }}"
+
+    with:
+      operation: ${{ inputs.operation }}
+
     secrets: inherit
 
+# ============================================================
+# AWS
+# ============================================================
+  aws:
+    name: AWS - ${{ inputs.operation }}
+    if: ${{ inputs.cloud == 'all' || inputs.cloud == 'aws' }}
+    uses: ./.github/workflows/aws-deployment.yml
+
+    with:
+      operation: ${{ inputs.operation }}
+
+    secrets: inherit
+
+# ============================================================
+# GCP
+# ============================================================
   gcp:
+    name: GCP - ${{ inputs.operation }}
     if: ${{ inputs.cloud == 'all' || inputs.cloud == 'gcp' }}
     uses: ./.github/workflows/gcp-deployment.yml
+
     with:
-      operation: "${{ inputs.operation }}"
+      operation: ${{ inputs.operation }}
+
     secrets: inherit
