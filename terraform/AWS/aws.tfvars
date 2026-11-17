@@ -1,6 +1,6 @@
 aws_region = "ap-south-1"
 
-name = "multicloud-aws"
+name = "aws-tflab"
 
 vpc_cidr            = "10.20.0.0/16"
 public_subnet_cidrs = ["10.20.1.0/24", "10.20.2.0/24"]
