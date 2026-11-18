@@ -1,0 +1,21 @@
+trigger: none
+
+pool:
+  name: Local-Linux-Agents
+
+steps:
+  - checkout: self
+
+  - script: |
+      echo "Azure DevOps Self-Hosted Agent Test"
+      echo "-----------------------------------"
+      hostname
+      cat /etc/redhat-release
+      uname -m
+      whoami
+      terraform version
+      git --version
+      az version
+      aws --version
+      gcloud version
+    displayName: 'Verify RHEL Agent and Installed Tools'
