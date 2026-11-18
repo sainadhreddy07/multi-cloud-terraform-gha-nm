@@ -8,7 +8,6 @@ parameters:
   type: string
   default: all
   values: [all, azure, aws, gcp]
-
 - name: operation
   displayName: Terraform operation
   type: string
@@ -20,12 +19,10 @@ stages:
   - template: templates/azure-deployment.yml
     parameters:
       operation: ${{ parameters.operation }}
-
 - ${{ if or(eq(parameters.cloud, 'all'), eq(parameters.cloud, 'aws')) }}:
   - template: templates/aws-deployment.yml
     parameters:
       operation: ${{ parameters.operation }}
-      
 - ${{ if or(eq(parameters.cloud, 'all'), eq(parameters.cloud, 'gcp')) }}:
   - template: templates/gcp-deployment.yml
     parameters:
