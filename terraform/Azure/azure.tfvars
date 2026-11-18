@@ -12,9 +12,11 @@ nsg_name = "azure-nsg-01"
 nic_name                  = "azure-linux-nic"
 nic_ip_configuration_name = "primary"
 
-vm_name        = "azure-linux-vm"
-vm_size        = "Standard_D2as_v6"
-admin_username = "azurelabuser"
+vm_name              = "azure-linux-vm"
+vm_size              = "Standard_D2as_v6"
+admin_username       = "azurelabuser"
+admin_ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICqm0K5MYm2srceaPTqyYf52K/2HV1IHoErQ8GWK4zKF azure-multiregion-lab"
+
 
 os_disk_caching      = "ReadWrite"
 os_disk_storage_type = "StandardSSD_LRS"
