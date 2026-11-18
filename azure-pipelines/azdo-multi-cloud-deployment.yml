@@ -22,18 +22,23 @@ parameters:
   displayName: Terraform operation
   type: string
   default: plan
-  values: [plan, apply, destroy]
+  values:
+  - plan
+  - apply
+  - destroy
 
 stages:
-- ${{ if or(eq(parameters.cloud, 'all'), eq(parameters.cloud, 'azure')) }}:
+- ${{ if eq(parameters.deployAzure, true) }}:
   - template: templates/azure-deployment.yml
     parameters:
       operation: ${{ parameters.operation }}
-- ${{ if or(eq(parameters.cloud, 'all'), eq(parameters.cloud, 'aws')) }}:
+
+- ${{ if eq(parameters.deployAWS, true) }}:
   - template: templates/aws-deployment.yml
     parameters:
       operation: ${{ parameters.operation }}
-- ${{ if or(eq(parameters.cloud, 'all'), eq(parameters.cloud, 'gcp')) }}:
+
+- ${{ if eq(parameters.deployGCP, true) }}:
   - template: templates/gcp-deployment.yml
     parameters:
       operation: ${{ parameters.operation }}
