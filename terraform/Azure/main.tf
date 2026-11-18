@@ -54,7 +54,7 @@ module "compute" {
 
 # Separate Windows VM, sharing the VNet/subnet/NSG but using its own NIC and disks.
 module "windows_vm" {
-  source                    = "./modules/windows-vm"
+  source                    = "./modules/compute/windows-vm"
   nic_name                  = var.windows_nic_name
   nic_ip_configuration_name = var.windows_nic_ip_configuration_name
   location                  = var.location

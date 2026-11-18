@@ -17,26 +17,20 @@ resource "azurerm_network_interface_security_group_association" "this" {
   network_security_group_id = var.nsg_id
 }
 
-resource "azurerm_managed_disk" "data" {
-  count                = var.data_disk_count
-  name                 = "${var.vm_name}-data-${count.index + 1}"
-  location             = var.location
-  resource_group_name  = var.resource_group_name
-  storage_account_type = var.data_disk_storage_type
-  create_option        = "Empty"
-  disk_size_gb         = var.data_disk_size_gb
-  tags                 = var.tags
-}
-
 resource "azurerm_windows_virtual_machine" "this" {
-  depends_on          = [azurerm_network_interface_security_group_association.this]
+  depends_on = [
+    azurerm_network_interface_security_group_association.this
+  ]
+
   name                = var.vm_name
   computer_name       = substr(var.vm_name, 0, 15)
   resource_group_name = var.resource_group_name
   location            = var.location
   size                = var.vm_size
-  admin_username      = var.admin_username
-  admin_password      = var.admin_password
+
+  admin_username = var.admin_username
+  admin_password = var.admin_password
+
   network_interface_ids = [
     azurerm_network_interface.this.id
   ]
@@ -61,8 +55,22 @@ resource "azurerm_windows_virtual_machine" "this" {
   tags = var.tags
 }
 
+resource "azurerm_managed_disk" "data" {
+  count = var.data_disk_count
+
+  name                 = "${var.vm_name}-data-${count.index + 1}"
+  location             = var.location
+  resource_group_name  = var.resource_group_name
+  storage_account_type = var.data_disk_storage_type
+  create_option        = "Empty"
+  disk_size_gb         = var.data_disk_size_gb
+
+  tags = var.tags
+}
+
 resource "azurerm_virtual_machine_data_disk_attachment" "this" {
-  count              = var.data_disk_count
+  count = var.data_disk_count
+
   managed_disk_id    = azurerm_managed_disk.data[count.index].id
   virtual_machine_id = azurerm_windows_virtual_machine.this.id
   lun                = count.index
