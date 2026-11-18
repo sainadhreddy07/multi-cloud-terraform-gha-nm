@@ -70,7 +70,7 @@ jobs:
   plan:
     name: Azure - Terraform Plan
     if: ${{ inputs.operation == 'plan' || inputs.operation == 'apply' }}
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     defaults:
       run:
@@ -128,7 +128,7 @@ jobs:
     name: Azure - Terraform Apply
     if: ${{ inputs.operation == 'apply' }}
     needs: plan
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment: azure-terraform-apply
 
     defaults:
@@ -173,7 +173,7 @@ jobs:
   destroy:
     name: Azure - Terraform Destroy
     if: ${{ inputs.operation == 'destroy' }}
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment: azure-terraform-destroy
 
     defaults:

@@ -48,7 +48,7 @@ jobs:
   plan:
     name: GCP - Terraform Plan
     if: ${{ inputs.operation == 'plan' || inputs.operation == 'apply' }}
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     defaults:
       run:
@@ -107,7 +107,7 @@ jobs:
     name: GCP - Terraform Apply
     if: ${{ inputs.operation == 'apply' }}
     needs: plan
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment: gcp-terraform-apply
 
     defaults:
@@ -154,7 +154,7 @@ jobs:
   destroy:
     name: GCP - Terraform Destroy
     if: ${{ inputs.operation == 'destroy' }}
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment: gcp-terraform-destroy
 
     defaults:
