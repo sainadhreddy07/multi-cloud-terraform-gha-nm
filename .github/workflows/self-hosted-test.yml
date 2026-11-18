@@ -1,0 +1,17 @@
+name: Self-Hosted Runner Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  runner-test:
+    runs-on: self-hosted
+
+    steps:
+      - name: Display runner information
+        run: |
+          echo "Hello from my RHEL self-hosted runner!"
+          hostname
+          cat /etc/redhat-release
+          uname -m
+          whoami
