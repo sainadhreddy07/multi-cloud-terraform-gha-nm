@@ -73,7 +73,7 @@ stages:
         artifactName: aws-tfplan
         targetPath: $(System.DefaultWorkingDirectory)/terraform/AWS
     - task: AWSShellScript@1
-      displayName: Terraform Init and Apply Saved Plan
+      displayName: Terraform Init, Apply Saved Plan and Outputs
       inputs:
         awsCredentials: sc-aws-terraform-wif
         regionName: ap-south-1
