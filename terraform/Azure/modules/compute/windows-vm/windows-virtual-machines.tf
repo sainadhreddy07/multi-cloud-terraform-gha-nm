@@ -41,8 +41,8 @@ resource "azurerm_windows_virtual_machine" "this" {
     azurerm_network_interface.this.id
   ]
 
-  provision_vm_agent        = true
-  patch_mode                = "AutomaticByOS"
+  provision_vm_agent = true
+  patch_mode         = "AutomaticByOS"
 
   os_disk {
     name                 = "${var.vm_name}-osdisk"

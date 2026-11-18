@@ -96,8 +96,8 @@ module "load_balancer" {
   frontend_port             = var.lb_frontend_port
   backend_port              = var.lb_backend_port
   probe_path                = var.lb_probe_path
-  probe_interval             = var.lb_probe_interval
-  probe_count                = var.lb_probe_count
-  outbound_ports             = var.lb_outbound_ports
-  tags                       = var.tags
+  probe_interval            = var.lb_probe_interval
+  probe_count               = var.lb_probe_count
+  outbound_ports            = var.lb_outbound_ports
+  tags                      = var.tags
 }

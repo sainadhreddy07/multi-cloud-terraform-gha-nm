@@ -1,11 +1,11 @@
 location            = "eastus2"
 resource_group_name = "rg-azure-terraform-lab"
 
-vnet_name          = "azure-vnet-01"
-vnet_address_space = ["10.10.0.0/16"]
+vnet_name               = "azure-vnet-01"
+vnet_address_space      = ["10.10.0.0/16"]
 subnet_name             = "azure-subnet-01"
 subnet_address_prefixes = ["10.10.1.0/24"]
-nsg_name = "azure-nsg-01"
+nsg_name                = "azure-nsg-01"
 
 # Linux VM
 nic_name                  = "azure-linux-nic"
@@ -52,12 +52,12 @@ lb_backend_pool_name         = "azure-lb-backend-pool"
 lb_probe_name                = "azure-lb-probe"
 lb_rule_name                 = "azure-lb-rule"
 lb_outbound_rule_name        = "azure-lb-outbound"
-lb_frontend_port  = 80
-lb_backend_port   = 80
-lb_probe_path     = "/"
-lb_probe_interval = 15
-lb_probe_count    = 2
-lb_outbound_ports = 1024
+lb_frontend_port             = 80
+lb_backend_port              = 80
+lb_probe_path                = "/"
+lb_probe_interval            = 15
+lb_probe_count               = 2
+lb_outbound_ports            = 1024
 
 security_rules = [
   {

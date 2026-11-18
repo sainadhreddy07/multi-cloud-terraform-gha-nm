@@ -19,27 +19,27 @@ variable "image_offer" { type = string }
 variable "image_sku" { type = string }
 variable "image_version" { type = string }
 
-variable "data_disk_count" { 
-  type = number
-  default = 0 
+variable "data_disk_count" {
+  type    = number
+  default = 0
 }
 
-variable "data_disk_size_gb" { 
-  type = number
-  default = 32 
+variable "data_disk_size_gb" {
+  type    = number
+  default = 32
 }
 
-variable "data_disk_storage_type" { 
-  type = string
-  default = "StandardSSD_LRS" 
+variable "data_disk_storage_type" {
+  type    = string
+  default = "StandardSSD_LRS"
 }
 
-variable "data_disk_caching" { 
-  type = string
-  default = "ReadWrite" 
+variable "data_disk_caching" {
+  type    = string
+  default = "ReadWrite"
 }
 
-variable "tags" { 
-  type = map(string)
-  default = {} 
+variable "tags" {
+  type    = map(string)
+  default = {}
 }

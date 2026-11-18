@@ -39,24 +39,24 @@ variable "image_sku" { type = string }
 variable "image_version" { type = string }
 variable "web_page_title" { type = string }
 
-variable "data_disk_count" { 
-  type = number
-  default = 0 
+variable "data_disk_count" {
+  type    = number
+  default = 0
 }
 
-variable "data_disk_size_gb" { 
-  type = number
-  default = 10 
+variable "data_disk_size_gb" {
+  type    = number
+  default = 10
 }
 
-variable "data_disk_storage_type" { 
-  type = string
-  default = "StandardSSD_LRS" 
+variable "data_disk_storage_type" {
+  type    = string
+  default = "StandardSSD_LRS"
 }
 
-variable "data_disk_caching" { 
-  type = string
-  default = "ReadWrite" 
+variable "data_disk_caching" {
+  type    = string
+  default = "ReadWrite"
 }
 
 # Windows VM inputs - deliberately separate from Linux inputs.
@@ -77,24 +77,24 @@ variable "windows_image_offer" { type = string }
 variable "windows_image_sku" { type = string }
 variable "windows_image_version" { type = string }
 
-variable "windows_data_disk_count" { 
-  type = number
-  default = 0 
+variable "windows_data_disk_count" {
+  type    = number
+  default = 0
 }
 
-variable "windows_data_disk_size_gb" { 
-  type = number
+variable "windows_data_disk_size_gb" {
+  type    = number
   default = 32
 }
 
-variable "windows_data_disk_storage_type" { 
-  type = string
-  default = "StandardSSD_LRS" 
+variable "windows_data_disk_storage_type" {
+  type    = string
+  default = "StandardSSD_LRS"
 }
 
-variable "windows_data_disk_caching" { 
-  type = string
-  default = "ReadWrite" 
+variable "windows_data_disk_caching" {
+  type    = string
+  default = "ReadWrite"
 }
 
 # Load balancer inputs.
