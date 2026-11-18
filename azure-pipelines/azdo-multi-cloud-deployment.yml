@@ -1,0 +1,32 @@
+# Unified multi-cloud Terraform pipeline
+trigger: none
+pr: none
+
+parameters:
+- name: cloud
+  displayName: Cloud provider
+  type: string
+  default: all
+  values: [all, azure, aws, gcp]
+
+- name: operation
+  displayName: Terraform operation
+  type: string
+  default: plan
+  values: [plan, apply, destroy]
+
+stages:
+- ${{ if or(eq(parameters.cloud, 'all'), eq(parameters.cloud, 'azure')) }}:
+  - template: templates/azure-deployment.yml
+    parameters:
+      operation: ${{ parameters.operation }}
+
+- ${{ if or(eq(parameters.cloud, 'all'), eq(parameters.cloud, 'aws')) }}:
+  - template: templates/aws-deployment.yml
+    parameters:
+      operation: ${{ parameters.operation }}
+      
+- ${{ if or(eq(parameters.cloud, 'all'), eq(parameters.cloud, 'gcp')) }}:
+  - template: templates/gcp-deployment.yml
+    parameters:
+      operation: ${{ parameters.operation }}

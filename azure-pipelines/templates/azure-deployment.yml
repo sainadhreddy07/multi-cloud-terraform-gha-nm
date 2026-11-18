@@ -1,0 +1,178 @@
+parameters:
+- name: operation
+  type: string
+
+
+stages:
+
+- stage: AZUREPlan
+  displayName: Azure - Terraform Plan
+  dependsOn: []
+  condition: and(succeeded(), or(eq('${{ parameters.operation }}', 'plan'), eq('${{ parameters.operation }}', 'apply')))
+  
+  jobs:
+  - job: AZUREPlanJob
+    displayName: Azure Plan
+    pool:
+      name: Local-Linux-Agents
+   
+    steps:
+    - checkout: self
+    - bash: terraform fmt -check -recursive
+      displayName: Terraform Format Check
+      workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
+          - task: TerraformTaskV4@4
+            displayName: Terraform Init
+            inputs:
+              provider: azurerm
+              command: init
+              workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
+              commandOptions: -input=false -reconfigure
+              backendServiceArm: sc-azure-multicloud
+              backendAzureRmUseEnvironmentVariablesForAuthentication: true
+              backendAzureRmUseEntraIdForAuthentication: true
+              backendAzureRmResourceGroupName: rg-tfstate-shared
+              backendAzureRmStorageAccountName: multicloudstorage001
+              backendAzureRmContainerName: tfstate
+              backendAzureRmKey: multi-cloud-terraform-gha-nm/azure.tfstate
+       
+          - task: TerraformTaskV4@4
+            displayName: Terraform Validate
+            inputs:
+              provider: azurerm
+              command: validate
+              workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
+        
+          - task: TerraformTaskV4@4
+            displayName: Terraform Plan
+            inputs:
+              provider: azurerm
+              command: plan
+              workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
+              commandOptions: -var-file=azure.tfvars -input=false -lock-timeout=5m -out=tfplan
+              environmentServiceNameAzureRM: sc-azure-multicloud
+     
+          - task: TerraformTaskV4@4
+            displayName: Display Terraform Plan
+            inputs:
+              provider: azurerm
+              command: show
+              workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
+              outputTo: console
+              outputFormat: default
+              commandOptions: -no-color tfplan
+     
+          - task: PublishPipelineArtifact@1
+            displayName: Publish AZURE Terraform Plan
+            inputs:
+              targetPath: $(System.DefaultWorkingDirectory)/terraform/Azure/tfplan
+              artifact: azure-tfplan
+              publishLocation: pipeline
+
+- stage: AZUREApply
+  displayName: Azure - Terraform Apply
+  dependsOn: AZUREPlan
+  condition: and(succeeded(), eq('${{ parameters.operation }}', 'apply'))
+ 
+  jobs:
+  - job: AZUREApplyJob
+    displayName: Azure Apply
+    pool:
+      name: Local-Linux-Agents
+  
+    steps:
+    - checkout: self
+          - task: DownloadPipelineArtifact@2
+            displayName: Download AZURE Terraform Plan
+            inputs:
+              buildType: current
+              artifactName: azure-tfplan
+              targetPath: $(System.DefaultWorkingDirectory)/terraform/Azure
+     
+          - task: TerraformTaskV4@4
+            displayName: Terraform Init
+            inputs:
+              provider: azurerm
+              command: init
+              workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
+              commandOptions: -input=false -reconfigure
+              backendServiceArm: sc-azure-multicloud
+              backendAzureRmUseEnvironmentVariablesForAuthentication: true
+              backendAzureRmUseEntraIdForAuthentication: true
+              backendAzureRmResourceGroupName: rg-tfstate-shared
+              backendAzureRmStorageAccountName: multicloudstorage001
+              backendAzureRmContainerName: tfstate
+              backendAzureRmKey: multi-cloud-terraform-gha-nm/azure.tfstate
+     
+          - task: TerraformTaskV4@4
+            displayName: Terraform Apply Saved Plan
+            inputs:
+              provider: azurerm
+              command: apply
+              workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
+              commandOptions: -input=false -lock-timeout=5m tfplan
+              environmentServiceNameAzureRM: sc-azure-multicloud
+    
+          - task: TerraformTaskV4@4
+            displayName: Display Terraform Outputs
+            inputs:
+              provider: azurerm
+              command: output
+              workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
+
+- stage: AZUREDestroy
+  displayName: Azure - Terraform Destroy
+  dependsOn: []
+  condition: and(succeeded(), eq('${{ parameters.operation }}', 'destroy'))
+ 
+  jobs:
+  - job: AZUREDestroyJob
+    displayName: Azure Destroy
+    pool:
+      name: Local-Linux-Agents
+  
+    steps:
+    - checkout: self
+          - task: TerraformTaskV4@4
+            displayName: Terraform Init
+            inputs:
+              provider: azurerm
+              command: init
+              workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
+              commandOptions: -input=false -reconfigure
+              backendServiceArm: sc-azure-multicloud
+              backendAzureRmUseEnvironmentVariablesForAuthentication: true
+              backendAzureRmUseEntraIdForAuthentication: true
+              backendAzureRmResourceGroupName: rg-tfstate-shared
+              backendAzureRmStorageAccountName: multicloudstorage001
+              backendAzureRmContainerName: tfstate
+              backendAzureRmKey: multi-cloud-terraform-gha-nm/azure.tfstate
+      
+          - task: TerraformTaskV4@4
+            displayName: Terraform Destroy Plan
+            inputs:
+              provider: azurerm
+              command: plan
+              workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
+              commandOptions: -destroy -var-file=azure.tfvars -input=false -lock-timeout=5m -out=tf-destroy-plan
+              environmentServiceNameAzureRM: sc-azure-multicloud
+   
+          - task: TerraformTaskV4@4
+            displayName: Display Terraform Destroy Plan
+            inputs:
+              provider: azurerm
+              command: show
+              workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
+              outputTo: console
+              outputFormat: default
+              commandOptions: -no-color tf-destroy-plan
+   
+          - task: TerraformTaskV4@4
+            displayName: Terraform Destroy Apply
+            inputs:
+              provider: azurerm
+              command: apply
+              workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
+              commandOptions: -input=false -lock-timeout=5m tf-destroy-plan
+              environmentServiceNameAzureRM: sc-azure-multicloud
+
