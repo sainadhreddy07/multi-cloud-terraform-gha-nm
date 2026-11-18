@@ -9,6 +9,9 @@ parameters:
 - name: operation
   type: string
 
+variables:
+  - group: pipevar
+
 stages:
 - stage: GCPPlan
   displayName: GCP - Terraform Plan
