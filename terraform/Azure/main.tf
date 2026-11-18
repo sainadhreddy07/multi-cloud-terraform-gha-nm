@@ -1,3 +1,9 @@
+resource "azurerm_resource_group" "this" {
+  name     = var.resource_group_name
+  location = var.location
+  tags     = var.tags
+}
+
 module "network" {
   source                  = "./modules/network/vnet"
   resource_group_name     = azurerm_resource_group.this.name
@@ -9,14 +15,6 @@ module "network" {
   tags                    = var.tags
 }
 
-
-resource "azurerm_resource_group" "this" {
-  name     = var.resource_group_name
-  location = var.location
-  tags     = var.tags
-}
-
-
 module "security" {
   source              = "./modules/security"
   nsg_name            = var.nsg_name
@@ -26,7 +24,7 @@ module "security" {
   tags                = var.tags
 }
 
-
+# Linux VM remains deployed.
 module "compute" {
   source                    = "./modules/compute/linux-vm"
   nic_name                  = var.nic_name
@@ -54,7 +52,34 @@ module "compute" {
   tags                      = var.tags
 }
 
+# Separate Windows VM, sharing the VNet/subnet/NSG but using its own NIC and disks.
+module "windows_vm" {
+  source                    = "./modules/windows-vm"
+  nic_name                  = var.windows_nic_name
+  nic_ip_configuration_name = var.windows_nic_ip_configuration_name
+  location                  = var.location
+  resource_group_name       = azurerm_resource_group.this.name
+  subnet_id                 = module.network.subnet_id
+  nsg_id                    = module.security.nsg_id
+  vm_name                   = var.windows_vm_name
+  vm_size                   = var.windows_vm_size
+  admin_username            = var.windows_admin_username
+  admin_password            = var.admin_password
+  os_disk_caching           = var.windows_os_disk_caching
+  os_disk_storage_type      = var.windows_os_disk_storage_type
+  os_disk_size_gb           = var.windows_os_disk_size_gb
+  image_publisher           = var.windows_image_publisher
+  image_offer               = var.windows_image_offer
+  image_sku                 = var.windows_image_sku
+  image_version             = var.windows_image_version
+  data_disk_count           = var.windows_data_disk_count
+  data_disk_size_gb         = var.windows_data_disk_size_gb
+  data_disk_storage_type    = var.windows_data_disk_storage_type
+  data_disk_caching         = var.windows_data_disk_caching
+  tags                      = var.tags
+}
 
+# Keep the existing load balancer attached to the Linux VM only.
 module "load_balancer" {
   source                    = "./modules/load-balancer"
   resource_group_name       = azurerm_resource_group.this.name
@@ -71,8 +96,8 @@ module "load_balancer" {
   frontend_port             = var.lb_frontend_port
   backend_port              = var.lb_backend_port
   probe_path                = var.lb_probe_path
-  probe_interval            = var.lb_probe_interval
-  probe_count               = var.lb_probe_count
-  outbound_ports            = var.lb_outbound_ports
-  tags                      = var.tags
+  probe_interval             = var.lb_probe_interval
+  probe_count                = var.lb_probe_count
+  outbound_ports             = var.lb_outbound_ports
+  tags                       = var.tags
 }
