@@ -4,12 +4,12 @@ parameters:
 
 stages:
 - stage: AWSPlan
-  displayName: Aws - Terraform Plan
+  displayName: AWS - Terraform Plan
   dependsOn: []
   condition: and(succeeded(), or(eq('${{ parameters.operation }}', 'plan'), eq('${{ parameters.operation }}', 'apply')))
   jobs:
   - job: AWSPlanJob
-    displayName: Aws Plan
+    displayName: AWS Plan
     pool:
       name: Local-Linux-Agents
     steps:
@@ -17,40 +17,37 @@ stages:
     - bash: terraform fmt -check -recursive
       displayName: Terraform Format Check
       workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
-    - task: TerraformTaskV4@4
-      displayName: Terraform Init
+    - task: AWSShellScript@1
+      displayName: Terraform Init and Validate
       inputs:
-        provider: aws
-        command: init
-        workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
-        commandOptions: -input=false -reconfigure
-        backendServiceAWS: sc-aws-terraform-wif
-        backendAWSBucketName: multicloudbucket001
-        backendAWSKey: multi-cloud-terraform-gha-nm/aws/terraform.tfstate
-    - task: TerraformTaskV4@4
-      displayName: Terraform Validate
-      inputs:
-        provider: aws
-        command: validate
-        workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
-    - task: TerraformTaskV4@4
+        awsCredentials: sc-aws-terraform-wif
+        regionName: ap-south-1
+        scriptType: inline
+        inlineScript: |
+          set -euo pipefail
+          cd "$(System.DefaultWorkingDirectory)/terraform/AWS"
+          terraform init -input=false -reconfigure
+          terraform validate
+    - task: AWSShellScript@1
       displayName: Terraform Plan
       inputs:
-        provider: aws
-        command: plan
-        workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
-        commandOptions: -var-file=aws.tfvars -input=false -lock-timeout=5m -out=tfplan
-        environmentServiceNameAWS: sc-aws-terraform-wif
-    - task: TerraformTaskV4@4
+        awsCredentials: sc-aws-terraform-wif
+        regionName: ap-south-1
+        scriptType: inline
+        inlineScript: |
+          set -euo pipefail
+          cd "$(System.DefaultWorkingDirectory)/terraform/AWS"
+          terraform plan -var-file=aws.tfvars -input=false -lock-timeout=5m -out=tfplan
+    - task: AWSShellScript@1
       displayName: Display Terraform Plan
       inputs:
-        provider: aws
-        command: show
-        workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
-        outputTo: console
-        outputFormat: default
-        commandOptions: -no-color tfplan
-        environmentServiceNameAWS: sc-aws-terraform-wif
+        awsCredentials: sc-aws-terraform-wif
+        regionName: ap-south-1
+        scriptType: inline
+        inlineScript: |
+          set -euo pipefail
+          cd "$(System.DefaultWorkingDirectory)/terraform/AWS"
+          terraform show -no-color tfplan
     - task: PublishPipelineArtifact@1
       displayName: Publish AWS Terraform Plan
       inputs:
@@ -59,12 +56,12 @@ stages:
         publishLocation: pipeline
 
 - stage: AWSApply
-  displayName: Aws - Terraform Apply
+  displayName: AWS - Terraform Apply
   dependsOn: AWSPlan
   condition: and(succeeded(), eq('${{ parameters.operation }}', 'apply'))
   jobs:
   - job: AWSApplyJob
-    displayName: Aws Apply
+    displayName: AWS Apply
     pool:
       name: Local-Linux-Agents
     steps:
@@ -75,77 +72,49 @@ stages:
         buildType: current
         artifactName: aws-tfplan
         targetPath: $(System.DefaultWorkingDirectory)/terraform/AWS
-    - task: TerraformTaskV4@4
-      displayName: Terraform Init
+    - task: AWSShellScript@1
+      displayName: Terraform Init and Apply Saved Plan
       inputs:
-        provider: aws
-        command: init
-        workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
-        commandOptions: -input=false -reconfigure
-        backendServiceAWS: sc-aws-terraform-wif
-        backendAWSBucketName: multicloudbucket001
-        backendAWSKey: multi-cloud-terraform-gha-nm/aws/terraform.tfstate
-    - task: TerraformTaskV4@4
-      displayName: Terraform Apply Saved Plan
-      inputs:
-        provider: aws
-        command: apply
-        workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
-        commandOptions: -input=false -lock-timeout=5m tfplan
-        environmentServiceNameAWS: sc-aws-terraform-wif
-    - task: TerraformTaskV4@4
-      displayName: Display Terraform Outputs
-      inputs:
-        provider: aws
-        command: output
-        workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
-        environmentServiceNameAWS: sc-aws-terraform-wif
+        awsCredentials: sc-aws-terraform-wif
+        regionName: ap-south-1
+        scriptType: inline
+        inlineScript: |
+          set -euo pipefail
+          cd "$(System.DefaultWorkingDirectory)/terraform/AWS"
+          terraform init -input=false -reconfigure
+          terraform apply -input=false -lock-timeout=5m tfplan
+          terraform output
 
 - stage: AWSDestroy
-  displayName: Aws - Terraform Destroy
+  displayName: AWS - Terraform Destroy
   dependsOn: []
   condition: and(succeeded(), eq('${{ parameters.operation }}', 'destroy'))
   jobs:
   - job: AWSDestroyJob
-    displayName: Aws Destroy
+    displayName: AWS Destroy
     pool:
       name: Local-Linux-Agents
     steps:
     - checkout: self
-    - task: TerraformTaskV4@4
-      displayName: Terraform Init
+    - task: AWSShellScript@1
+      displayName: Terraform Init and Create Destroy Plan
       inputs:
-        provider: aws
-        command: init
-        workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
-        commandOptions: -input=false -reconfigure
-        backendServiceAWS: sc-aws-terraform-wif
-        backendAWSBucketName: multicloudbucket001
-        backendAWSKey: multi-cloud-terraform-gha-nm/aws/terraform.tfstate
-    - task: TerraformTaskV4@4
-      displayName: Terraform Destroy Plan
+        awsCredentials: sc-aws-terraform-wif
+        regionName: ap-south-1
+        scriptType: inline
+        inlineScript: |
+          set -euo pipefail
+          cd "$(System.DefaultWorkingDirectory)/terraform/AWS"
+          terraform init -input=false -reconfigure
+          terraform plan -destroy -var-file=aws.tfvars -input=false -lock-timeout=5m -out=tf-destroy-plan
+          terraform show -no-color tf-destroy-plan
+    - task: AWSShellScript@1
+      displayName: Apply Terraform Destroy Plan
       inputs:
-        provider: aws
-        command: plan
-        workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
-        commandOptions: -destroy -var-file=aws.tfvars -input=false -lock-timeout=5m -out=tf-destroy-plan
-        environmentServiceNameAWS: sc-aws-terraform-wif
-    - task: TerraformTaskV4@4
-      displayName: Display Terraform Destroy Plan
-      inputs:
-        provider: aws
-        command: show
-        workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
-        outputTo: console
-        outputFormat: default
-        commandOptions: -no-color tf-destroy-plan
-        environmentServiceNameAWS: sc-aws-terraform-wif
-    - task: TerraformTaskV4@4
-      displayName: Terraform Destroy Apply
-      inputs:
-        provider: aws
-        command: apply
-        workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
-        commandOptions: -input=false -lock-timeout=5m tf-destroy-plan
-        environmentServiceNameAWS: sc-aws-terraform-wif
-
+        awsCredentials: sc-aws-terraform-wif
+        regionName: ap-south-1
+        scriptType: inline
+        inlineScript: |
+          set -euo pipefail
+          cd "$(System.DefaultWorkingDirectory)/terraform/AWS"
+          terraform apply -input=false -lock-timeout=5m tf-destroy-plan
