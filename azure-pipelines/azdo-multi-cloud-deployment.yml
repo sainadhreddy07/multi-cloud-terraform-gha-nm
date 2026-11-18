@@ -3,11 +3,21 @@ trigger: none
 pr: none
 
 parameters:
-- name: cloud
-  displayName: Cloud provider
-  type: string
-  default: all
-  values: [all, azure, aws, gcp]
+- name: deployAzure
+  displayName: Deploy Azure
+  type: boolean
+  default: true
+
+- name: deployAWS
+  displayName: Deploy AWS
+  type: boolean
+  default: true
+
+- name: deployGCP
+  displayName: Deploy GCP
+  type: boolean
+  default: true
+
 - name: operation
   displayName: Terraform operation
   type: string
