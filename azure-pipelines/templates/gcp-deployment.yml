@@ -9,12 +9,11 @@ parameters:
 - name: operation
   type: string
 
-variables:
-  - group: pipevar
-
 stages:
 - stage: GCPPlan
   displayName: GCP - Terraform Plan
+  variables:
+  - group: pipevar
   dependsOn: []
   condition: and(succeeded(), or(eq('${{ parameters.operation }}', 'plan'), eq('${{ parameters.operation }}', 'apply')))
   jobs:
@@ -82,6 +81,8 @@ stages:
 
 - stage: GCPApply
   displayName: GCP - Terraform Apply
+  variables:
+  - group: pipevar
   dependsOn: GCPPlan
   condition: and(succeeded(), eq('${{ parameters.operation }}', 'apply'))
   jobs:
@@ -135,6 +136,8 @@ stages:
 
 - stage: GCPDestroy
   displayName: GCP - Terraform Destroy
+  variables:
+  - group: pipevar
   dependsOn: []
   condition: and(succeeded(), eq('${{ parameters.operation }}', 'destroy'))
   jobs:
