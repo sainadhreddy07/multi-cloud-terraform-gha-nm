@@ -65,6 +65,7 @@ variable "windows_nic_ip_configuration_name" { type = string }
 variable "windows_vm_name" { type = string }
 variable "windows_vm_size" { type = string }
 variable "windows_admin_username" { type = string }
+
 variable "admin_password" {
   type      = string
   sensitive = true
