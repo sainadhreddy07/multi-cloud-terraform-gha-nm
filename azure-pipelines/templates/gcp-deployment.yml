@@ -28,7 +28,7 @@ stages:
               command: init
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/GCP
               commandOptions: -input=false -reconfigure
-              backendServiceGCP: sc-gcp-wlf
+              backendServiceGCP: sc-gcp-wif-token
               backendGCPBucketName: mc-infra-gcp-tfstate-001
               backendGCPPrefix: multi-cloud-terraform-gha-nm/gcp
     
@@ -46,7 +46,7 @@ stages:
               command: plan
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/GCP
               commandOptions: -var-file=gcp.tfvars -input=false -lock-timeout=5m -out=tfplan
-              environmentServiceNameGCP: sc-gcp-wlf
+              environmentServiceNameGCP: sc-gcp-wif-token
     
           - task: TerraformTaskV4@4
             displayName: Display Terraform Plan
@@ -92,7 +92,7 @@ stages:
               command: init
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/GCP
               commandOptions: -input=false -reconfigure
-              backendServiceGCP: sc-gcp-wlf
+              backendServiceGCP: sc-gcp-wif-token
               backendGCPBucketName: mc-infra-gcp-tfstate-001
               backendGCPPrefix: multi-cloud-terraform-gha-nm/gcp
 
@@ -103,7 +103,7 @@ stages:
               command: apply
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/GCP
               commandOptions: -input=false -lock-timeout=5m tfplan
-              environmentServiceNameGCP: sc-gcp-wlf
+              environmentServiceNameGCP: sc-gcp-wif-token
 
           - task: TerraformTaskV4@4
             displayName: Display Terraform Outputs
@@ -132,7 +132,7 @@ stages:
               command: init
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/GCP
               commandOptions: -input=false -reconfigure
-              backendServiceGCP: sc-gcp-wlf
+              backendServiceGCP: sc-gcp-wif-token
               backendGCPBucketName: mc-infra-gcp-tfstate-001
               backendGCPPrefix: multi-cloud-terraform-gha-nm/gcp
 
@@ -143,7 +143,7 @@ stages:
               command: plan
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/GCP
               commandOptions: -destroy -var-file=gcp.tfvars -input=false -lock-timeout=5m -out=tf-destroy-plan
-              environmentServiceNameGCP: sc-gcp-wlf
+              environmentServiceNameGCP: sc-gcp-wif-token
 
           - task: TerraformTaskV4@4
             displayName: Display Terraform Destroy Plan
@@ -162,5 +162,5 @@ stages:
               command: apply
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/GCP
               commandOptions: -input=false -lock-timeout=5m tf-destroy-plan
-              environmentServiceNameGCP: sc-gcp-wlf
+              environmentServiceNameGCP: sc-gcp-wif-token
 

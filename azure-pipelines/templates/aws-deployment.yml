@@ -28,7 +28,7 @@ stages:
               command: init
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
               commandOptions: -input=false -reconfigure
-              backendServiceAWS: sc-aws-oidc
+              backendServiceAWS: sc-aws-terraform-wif
               backendAWSBucketName: multicloudbucket001
               backendAWSKey: multi-cloud-terraform-gha-nm/aws/terraform.tfstate
        
@@ -46,7 +46,7 @@ stages:
               command: plan
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
               commandOptions: -var-file=aws.tfvars -input=false -lock-timeout=5m -out=tfplan
-              environmentServiceNameAWS: sc-aws-oidc
+              environmentServiceNameAWS: sc-aws-terraform-wif
       
           - task: TerraformTaskV4@4
             displayName: Display Terraform Plan
@@ -92,7 +92,7 @@ stages:
               command: init
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
               commandOptions: -input=false -reconfigure
-              backendServiceAWS: sc-aws-oidc
+              backendServiceAWS: sc-aws-terraform-wif
               backendAWSBucketName: multicloudbucket001
               backendAWSKey: multi-cloud-terraform-gha-nm/aws/terraform.tfstate
           
@@ -103,7 +103,7 @@ stages:
               command: apply
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
               commandOptions: -input=false -lock-timeout=5m tfplan
-              environmentServiceNameAWS: sc-aws-oidc
+              environmentServiceNameAWS: sc-aws-terraform-wif
           
           - task: TerraformTaskV4@4
             displayName: Display Terraform Outputs
@@ -132,7 +132,7 @@ stages:
               command: init
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
               commandOptions: -input=false -reconfigure
-              backendServiceAWS: sc-aws-oidc
+              backendServiceAWS: sc-aws-terraform-wif
               backendAWSBucketName: multicloudbucket001
               backendAWSKey: multi-cloud-terraform-gha-nm/aws/terraform.tfstate
   
@@ -143,7 +143,7 @@ stages:
               command: plan
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
               commandOptions: -destroy -var-file=aws.tfvars -input=false -lock-timeout=5m -out=tf-destroy-plan
-              environmentServiceNameAWS: sc-aws-oidc
+              environmentServiceNameAWS: sc-aws-terraform-wif
   
           - task: TerraformTaskV4@4
             displayName: Display Terraform Destroy Plan
@@ -162,5 +162,5 @@ stages:
               command: apply
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/AWS
               commandOptions: -input=false -lock-timeout=5m tf-destroy-plan
-              environmentServiceNameAWS: sc-aws-oidc
+              environmentServiceNameAWS: sc-aws-terraform-wif
 

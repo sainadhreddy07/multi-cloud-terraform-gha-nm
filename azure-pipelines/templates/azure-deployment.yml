@@ -28,7 +28,7 @@ stages:
               command: init
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
               commandOptions: -input=false -reconfigure
-              backendServiceArm: sc-azure-multicloud
+              backendServiceArm: sc-azure-terraform-wif
               backendAzureRmUseEnvironmentVariablesForAuthentication: true
               backendAzureRmUseEntraIdForAuthentication: true
               backendAzureRmResourceGroupName: rg-tfstate-shared
@@ -50,7 +50,7 @@ stages:
               command: plan
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
               commandOptions: -var-file=azure.tfvars -input=false -lock-timeout=5m -out=tfplan
-              environmentServiceNameAzureRM: sc-azure-multicloud
+              environmentServiceNameAzureRM: sc-azure-terraform-wif
      
           - task: TerraformTaskV4@4
             displayName: Display Terraform Plan
@@ -96,7 +96,7 @@ stages:
               command: init
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
               commandOptions: -input=false -reconfigure
-              backendServiceArm: sc-azure-multicloud
+              backendServiceArm: sc-azure-terraform-wif
               backendAzureRmUseEnvironmentVariablesForAuthentication: true
               backendAzureRmUseEntraIdForAuthentication: true
               backendAzureRmResourceGroupName: rg-tfstate-shared
@@ -111,7 +111,7 @@ stages:
               command: apply
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
               commandOptions: -input=false -lock-timeout=5m tfplan
-              environmentServiceNameAzureRM: sc-azure-multicloud
+              environmentServiceNameAzureRM: sc-azure-terraform-wif
     
           - task: TerraformTaskV4@4
             displayName: Display Terraform Outputs
@@ -140,7 +140,7 @@ stages:
               command: init
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
               commandOptions: -input=false -reconfigure
-              backendServiceArm: sc-azure-multicloud
+              backendServiceArm: sc-azure-terraform-wif
               backendAzureRmUseEnvironmentVariablesForAuthentication: true
               backendAzureRmUseEntraIdForAuthentication: true
               backendAzureRmResourceGroupName: rg-tfstate-shared
@@ -155,7 +155,7 @@ stages:
               command: plan
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
               commandOptions: -destroy -var-file=azure.tfvars -input=false -lock-timeout=5m -out=tf-destroy-plan
-              environmentServiceNameAzureRM: sc-azure-multicloud
+              environmentServiceNameAzureRM: sc-azure-terraform-wif
    
           - task: TerraformTaskV4@4
             displayName: Display Terraform Destroy Plan
@@ -174,5 +174,5 @@ stages:
               command: apply
               workingDirectory: $(System.DefaultWorkingDirectory)/terraform/Azure
               commandOptions: -input=false -lock-timeout=5m tf-destroy-plan
-              environmentServiceNameAzureRM: sc-azure-multicloud
+              environmentServiceNameAzureRM: sc-azure-terraform-wif
 
