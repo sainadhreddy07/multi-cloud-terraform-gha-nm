@@ -5,7 +5,7 @@ name = "aws-tflab"
 vpc_cidr            = "10.20.0.0/16"
 public_subnet_cidrs = ["10.20.1.0/24", "10.20.2.0/24"]
 
-instance_type     = "t3.medium"
+instance_type     = "t3.micro"
 ami_id            = null
 ami_ssm_parameter = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
 
@@ -30,7 +30,7 @@ tags = { environment = "lab", managed_by = "terraform" }
 # Windows Server EC2
 windows_ami_ssm_parameter = "/aws/service/ami-windows-latest/Windows_Server-2022-English-Full-Base"
 
-windows_instance_type = "t3.large"
+windows_instance_type = "t3.micro"
 
 windows_key_name = "aws-key-pair"
 
