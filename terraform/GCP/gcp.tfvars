@@ -21,13 +21,13 @@ lb_frontend_port           = 80
 lb_health_check_path       = "/"
 
 # Windows Server Compute Engine
-windows_machine_type       = "e2-standard-2"
-windows_boot_disk_image    = "windows-cloud/windows-2022"
-windows_boot_disk_size_gb  = 50
-windows_boot_disk_type     = "pd-balanced"
-windows_data_disk_count    = 1
-windows_data_disk_size_gb  = 20
-windows_data_disk_type     = "pd-balanced"
-windows_assign_public_ip   = true
-windows_network_tag        = "multicloud-gcp-windows"
-windows_rdp_source_ranges  = []
+windows_machine_type      = "e2-standard-2"
+windows_boot_disk_image   = "windows-cloud/windows-2022"
+windows_boot_disk_size_gb = 50
+windows_boot_disk_type    = "pd-balanced"
+windows_data_disk_count   = 1
+windows_data_disk_size_gb = 20
+windows_data_disk_type    = "pd-balanced"
+windows_assign_public_ip  = true
+windows_network_tag       = "multicloud-gcp-windows"
+windows_rdp_source_ranges = []

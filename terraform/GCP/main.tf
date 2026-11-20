@@ -47,18 +47,18 @@ module "load_balancer" {
 
 
 module "windows_vm" {
-  source              = "./modules/compute/windows-vm"
-  name                = var.name
-  project_id          = var.project_id
-  zone                = var.zone
-  machine_type        = var.windows_machine_type
-  subnet_self_link    = module.network.subnet_self_link
-  network_tags        = concat(var.network_tags, [var.windows_network_tag])
-  boot_disk_image     = var.windows_boot_disk_image
-  boot_disk_size_gb   = var.windows_boot_disk_size_gb
-  boot_disk_type      = var.windows_boot_disk_type
-  data_disk_count     = var.windows_data_disk_count
-  data_disk_size_gb   = var.windows_data_disk_size_gb
-  data_disk_type      = var.windows_data_disk_type
-  assign_public_ip    = var.windows_assign_public_ip
+  source            = "./modules/compute/windows-vm"
+  name              = var.name
+  project_id        = var.project_id
+  zone              = var.zone
+  machine_type      = var.windows_machine_type
+  subnet_self_link  = module.network.subnet_self_link
+  network_tags      = concat(var.network_tags, [var.windows_network_tag])
+  boot_disk_image   = var.windows_boot_disk_image
+  boot_disk_size_gb = var.windows_boot_disk_size_gb
+  boot_disk_type    = var.windows_boot_disk_type
+  data_disk_count   = var.windows_data_disk_count
+  data_disk_size_gb = var.windows_data_disk_size_gb
+  data_disk_type    = var.windows_data_disk_type
+  assign_public_ip  = var.windows_assign_public_ip
 }

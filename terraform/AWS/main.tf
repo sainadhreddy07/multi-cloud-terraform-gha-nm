@@ -50,19 +50,19 @@ module "load_balancer" {
 
 
 module "windows_vm" {
-  source                    = "./modules/compute/windows-vm"
-  name                      = var.name
-  ami_ssm_parameter         = var.windows_ami_ssm_parameter
-  instance_type             = var.windows_instance_type
-  subnet_id                 = module.network.public_subnet_ids[0]
-  security_group_id         = module.security.windows_instance_sg_id
-  key_name                  = var.windows_key_name
+  source            = "./modules/compute/windows-vm"
+  name              = var.name
+  ami_ssm_parameter = var.windows_ami_ssm_parameter
+  instance_type     = var.windows_instance_type
+  subnet_id         = module.network.public_subnet_ids[0]
+  security_group_id = module.security.windows_instance_sg_id
+  key_name          = var.windows_key_name
 
-  root_disk_size_gb         = var.windows_root_disk_size_gb
-  root_disk_type            = var.windows_root_disk_type
+  root_disk_size_gb = var.windows_root_disk_size_gb
+  root_disk_type    = var.windows_root_disk_type
 
-  data_disk_count           = var.windows_data_disk_count
-  data_disk_size_gb         = var.windows_data_disk_size_gb
-  data_disk_type            = var.windows_data_disk_type
-  tags                      = var.tags
+  data_disk_count   = var.windows_data_disk_count
+  data_disk_size_gb = var.windows_data_disk_size_gb
+  data_disk_type    = var.windows_data_disk_type
+  tags              = var.tags
 }

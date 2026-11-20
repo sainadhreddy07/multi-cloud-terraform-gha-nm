@@ -48,7 +48,7 @@ resource "aws_ebs_volume" "data" {
 }
 
 resource "aws_volume_attachment" "data" {
-  count       = var.data_disk_count
+  count = var.data_disk_count
   device_name = format(
     "/dev/sd%s",
     element(["f", "g", "h", "i", "j", "k", "l", "m"], count.index)
