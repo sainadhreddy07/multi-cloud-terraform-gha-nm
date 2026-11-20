@@ -55,3 +55,7 @@ Each module has one entry point (`main.tf`), a declared input contract (`variabl
 - The `terraform.tfvars.example` file is a template, not a ready-to-apply credential file.
 - Check provider quotas, region availability, CIDR overlap, and estimated costs before apply.
 - This is a learning architecture with one web backend. It is not a production HA design.
+
+## Windows VM extension
+
+See [`docs/WINDOWS-VM-SETUP.md`](docs/WINDOWS-VM-SETUP.md) for the Windows Server module, cloud prerequisites, identity permissions, restricted RDP setup, deployment, credential retrieval, cleanup, and troubleshooting.

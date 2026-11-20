@@ -5,6 +5,7 @@ module "network" {
   public_subnet_cidrs = var.public_subnet_cidrs
   tags                = var.tags
 }
+
 module "security" {
   source            = "./modules/security"
   name              = var.name
@@ -13,8 +14,11 @@ module "security" {
   ssh_port          = var.ssh_port
   alb_ingress_cidrs = var.alb_ingress_cidrs
   allowed_ssh_cidrs = var.allowed_ssh_cidrs
+  windows_rdp_cidrs = var.windows_rdp_cidrs
   tags              = var.tags
 }
+
+
 module "compute" {
   source            = "./modules/compute/linux-vm"
   name              = var.name
@@ -27,6 +31,8 @@ module "compute" {
   web_page_title    = var.web_page_title
   tags              = var.tags
 }
+
+
 module "load_balancer" {
   source               = "./modules/load-balancer"
   name                 = var.name
@@ -40,4 +46,23 @@ module "load_balancer" {
   health_check_path    = var.alb_health_check_path
   health_check_matcher = var.alb_health_check_matcher
   tags                 = var.tags
+}
+
+
+module "windows_vm" {
+  source                    = "./modules/compute/windows-vm"
+  name                      = var.name
+  ami_ssm_parameter         = var.windows_ami_ssm_parameter
+  instance_type             = var.windows_instance_type
+  subnet_id                 = module.network.public_subnet_ids[0]
+  security_group_id         = module.security.windows_instance_sg_id
+  key_name                  = var.windows_key_name
+
+  root_disk_size_gb         = var.windows_root_disk_size_gb
+  root_disk_type            = var.windows_root_disk_type
+
+  data_disk_count           = var.windows_data_disk_count
+  data_disk_size_gb         = var.windows_data_disk_size_gb
+  data_disk_type            = var.windows_data_disk_type
+  tags                      = var.tags
 }

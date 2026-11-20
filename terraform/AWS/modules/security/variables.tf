@@ -9,3 +9,8 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+
+variable "windows_rdp_cidrs" {
+  type    = list(string)
+  default = []
+}

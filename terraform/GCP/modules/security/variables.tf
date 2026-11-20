@@ -10,3 +10,13 @@ variable "ssh_source_ranges" {
 variable "target_tags" { type = list(string) }
 variable "http_port" { type = number }
 variable "ssh_port" { type = number }
+
+variable "windows_rdp_source_ranges" {
+  type    = list(string)
+  default = []
+}
+
+variable "windows_target_tag" {
+  type    = string
+  default = "multicloud-gcp-windows"
+}
