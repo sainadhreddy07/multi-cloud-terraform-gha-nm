@@ -4,8 +4,13 @@ output "vm_external_ip" { value = module.compute.external_ip }
 output "http_url" { value = module.load_balancer.http_url }
 output "network_name" { value = module.network.network_name }
 
-output "windows_vm_name" { value = module.windows_vm.instance_name }
-output "windows_vm_id" { value = module.windows_vm.instance_id }
-output "windows_vm_internal_ip" { value = module.windows_vm.internal_ip }
-output "windows_vm_external_ip" { value = module.windows_vm.external_ip }
-output "windows_vm_data_disk_ids" { value = module.windows_vm.data_disk_ids }
+
+# ========================================================
+# Temporarily commented due to Free tier constraint.
+# ========================================================
+
+# output "windows_vm_name" { value = module.windows_vm.instance_name }
+# output "windows_vm_id" { value = module.windows_vm.instance_id }
+# output "windows_vm_internal_ip" { value = module.windows_vm.internal_ip }
+# output "windows_vm_external_ip" { value = module.windows_vm.external_ip }
+# output "windows_vm_data_disk_ids" { value = module.windows_vm.data_disk_ids }
